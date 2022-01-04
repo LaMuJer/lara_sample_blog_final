@@ -33,7 +33,28 @@
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
                     <!-- Left Side Of Navbar -->
                     <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a href="{{ route('home') }}" class="nav-link {{ request()->url() == route('home') ? 'active' : '' }}">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('category.create') }}" class="nav-link {{ request()->url() == route('category.create') ? 'active' : '' }}">Manage Category</a>
+                        </li>
 
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Manage Posts
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                <li>
+                                    <a href="{{ route('post.create') }}" class="nav-link {{ request()->url() == route('post.create') ? 'active' : '' }}">Create Posts</a>
+                                </li>
+                                <li>
+                                    <a href="{{ route('post.index') }}" class="nav-link {{ request()->url() == route('post.index') ? 'active' : '' }}">Posts List</a>
+                                </li>
+{{--                                <li><hr class="dropdown-divider"></li>--}}
+{{--                                <li><a class="dropdown-item" href="#">Something else here</a></li>--}}
+                            </ul>
+                        </li>
                     </ul>
 
                     <!-- Right Side Of Navbar -->
