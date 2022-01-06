@@ -2,10 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Photo;
 use App\Models\Post;
 use App\Http\Requests\StorePostRequest;
 use App\Http\Requests\UpdatePostRequest;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
+use Intervention\Image\Facades\Image;
 use Psy\Util\Str;
 
 class PostController extends Controller
@@ -21,7 +26,7 @@ class PostController extends Controller
             $keyword = request()->search;
             $query->orWhere('title','like',"%$keyword%")
                     ->orWhere('description','like','%'.$keyword.'%');
-        })->with(['user','category'])->latest("id")->paginate(10);
+        })->with(['user','category','photos'])->latest("id")->paginate(10);
         return view('post.index',compact('posts'));
     }
 
@@ -32,6 +37,7 @@ class PostController extends Controller
      */
     public function create()
     {
+        Gate::authorize('create',Post::class);
         return view('post.create');
     }
 
@@ -43,12 +49,14 @@ class PostController extends Controller
      */
     public function store(StorePostRequest $request)
     {
+//        return $request;
 
         $request->validate([
-           'title' => 'required|min:3|unique:posts,title',
-           'category' => 'required|exists:categories,id',
-           'description' => 'required|min:10'
+
         ]);
+
+
+
         $post = new Post();
         $post->title = $request->title;
         $post->slug = date("d-m-Y").\Illuminate\Support\Str::slug($request->title);
@@ -59,6 +67,34 @@ class PostController extends Controller
         $post->isPublish = 1;
 
         $post->save();
+
+        if (!Storage::exists("public/thumbnail")){
+            Storage::makeDirectory("public/thumbnail");
+        }
+
+        if ($request->hasFile('photo')) {
+            foreach ($request->file('photo') as $photo) {
+
+                $newName = uniqid().'_photo.'.$photo->extension();
+                $photo->storeAs('public/photo',$newName);
+
+//                Create Thumbnail
+                $img = Image::make($photo)->greyscale();
+                $img->fit(200,200);
+                $img->save("storage/thumbnail/".$newName,100);
+
+
+                $photo = new Photo();
+                $photo->name = $newName;
+                $photo->post_id = $post->id;
+                $photo->user_id = Auth::id();
+
+                $photo->save();
+
+            }
+        }
+
+//        return $request;
         return redirect()->route('post.index')->with('status',"Aung P Aung P");
     }
 
@@ -70,7 +106,7 @@ class PostController extends Controller
      */
     public function show(Post $post)
     {
-
+        return view('post.show',compact('post'));
     }
 
     /**
@@ -81,7 +117,9 @@ class PostController extends Controller
      */
     public function edit(Post $post)
     {
-        //
+//        Gate::authorize('post-edit',$post);
+        Gate::authorize('view',$post);
+        return view('post.edit',compact('post'));
     }
 
     /**
@@ -93,7 +131,25 @@ class PostController extends Controller
      */
     public function update(UpdatePostRequest $request, Post $post)
     {
-        //
+        Gate::authorize('view',$post);
+
+        $request->validate([
+            'title' => 'required|min:3|unique:posts,title,'.$post->id,
+            'category' => 'required|exists:categories,id',
+            'description' => 'required|min:10'
+        ]);
+//        return  $request;
+
+        $post->title = $request->title;
+        $post->slug = date("d-m-Y").\Illuminate\Support\Str::slug($request->title);
+        $post->category_id = $request->category;
+        $post->description = $request->description;
+        $post->excerpt = \Illuminate\Support\Str::words($request->description, 20);
+//        $post->user_id = Auth::id(); // user should not be changed when update
+//        $post->isPublish = 1;
+
+        $post->update();
+        return redirect()->route('post.index')->with('status',"Post Updated");
     }
 
     /**
@@ -105,6 +161,18 @@ class PostController extends Controller
     public function destroy(Post $post)
     {
 //        return $post;
+        Gate::authorize('view',$post);
+
+//        delete photo files
+        foreach ($post->photos as $photo){
+            Storage::delete('public/photo/'.$photo->name);
+            Storage::delete('public/thumbnail/'.$photo->name);
+        }
+
+//        delete db records
+        $post->photos()->delete();
+
+//        post delete
         $post->delete();
         return redirect()->route('post.index')->with('status',"Aung P Aung P");
 

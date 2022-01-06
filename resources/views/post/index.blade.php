@@ -17,7 +17,7 @@
                                 <p class="alert alert-success">{{ session('status') }}</p>
                             @endif
                             <div class="d-flex justify-content-between">
-                                {{ $posts->links() }}
+                                {{ $posts->appends(request()->all())->links() }}
                                 <div class="">
                                     <form >
                                         <div class="input-group mb-3">
@@ -34,6 +34,7 @@
                                     <tr>
                                         <th>#</th>
                                         <th class="w-25">Title</th>
+                                        <th>Photo</th>
                                         <th>Category</th>
                                         <th>Owner</th>
                                         <th>Controls</th>
@@ -44,7 +45,18 @@
                                     @forelse($posts as $post)
                                         <tr>
                                             <td>{{ $post->id }}</td>
-                                            <td>{{ \Illuminate\Support\Str::words($post->title,15) }}</td>
+                                            <td>{{ $post->title }}</td>
+                                            <td>
+                                                @forelse($post->photos()->latest('id')->limit(3)->get() as $photo)
+
+                                                        <a class="venobox"  href="{{ asset('storage/photo/'.$photo->name) }}"  data-gall="gall{{ $post->id }}">
+                                                            <img src="{{ asset('storage/thumbnail/'.$photo->name) }}" height="40" alt="image alt"/>
+                                                        </a>
+
+                                                @empty
+                                                    <p class="mb-0 text-muted">No Photo Upload</p>
+                                                @endforelse
+                                            </td>
                                             <td>
                                                 <span class="badge bg-primary">
                                                     {{ $post->category->title }}
@@ -53,12 +65,16 @@
                                             <td>{{ $post->user->name }}</td>
                                             <td>
                                                 <div class="btn-group">
-                                                    <a href="" class="btn btn-sm btn-outline-primary">
+                                                    <a href="{{ route('post.show',$post->id) }}" class="btn btn-sm btn-outline-primary">
                                                         <i class="fas fa-eye fa-fw"></i>
                                                     </a>
-                                                    <a href="" class="btn btn-sm btn-outline-primary">
+{{--                                                    @can('post-edit',$post)--}}{{-- with Gate--}}
+                                                    @can('view',$post)
+                                                    <a href="{{ route('post.edit',$post->id) }}" class="btn btn-sm btn-outline-primary">
                                                         <i class="fas fa-pen-alt fa-fw"></i>
                                                     </a>
+{{--                                                    @endcan--}}{{-- with Gate--}}
+                                                    @endcan
                                                     <button class="btn btn-sm btn-outline-primary" form="deletePost{{ $post->id }}">
                                                         <i class="fas fa-trash-alt fa-fw"></i>
                                                     </button>

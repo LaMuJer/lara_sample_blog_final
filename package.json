@@ -21,6 +21,7 @@
         "sass-loader": "^11.0.1"
     },
     "dependencies": {
-        "@fortawesome/fontawesome-free": "^5.15.4"
+        "@fortawesome/fontawesome-free": "^5.15.4",
+        "venobox": "^2.0.4"
     }
 }
